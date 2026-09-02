@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#06303C">
+<title>Lane 4 — Swim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --water:#06303C;
+  --water-2:#0A3F4E;
+  --lane:#14586A;
+  --tile:#EEF4F3;
+  --muted:#7FA8B2;
+  --chlorine:#35D6C1;
+  --clock-red:#E8402A;
+  --warn:#F2B441;
+  --sans:'Barlow',system-ui,-apple-system,sans-serif;
+  --cond:'Barlow Condensed','Barlow',system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--water);
+  color:var(--tile);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+  overscroll-behavior-y:none;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 18px 120px}
+h1,h2,h3,.cond{font-family:var(--cond);font-weight:600;letter-spacing:.01em;margin:0}
+.num{font-variant-numeric:tabular-nums;font-family:var(--cond);font-weight:600}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--chlorine);outline-offset:3px;border-radius:2px}
+
+/* ---------- masthead ---------- */
+.mast{display:flex;align-items:baseline;justify-content:space-between;padding:22px 0 6px}
+.mast h1{font-size:26px;letter-spacing:.06em;font-weight:700}
+.mast .sub{font-size:13px;color:var(--muted);font-family:var(--cond);letter-spacing:.08em}
+
+/* ---------- pace clock ---------- */
+.clockwrap{display:flex;justify-content:center;padding:6px 0 4px}
+.clock{width:176px;height:176px;display:block}
+.clock .face{fill:var(--water-2);stroke:var(--lane);stroke-width:2}
+.clock .tick{stroke:var(--muted);stroke-width:1.5;opacity:.55}
+.clock .tick.big{stroke:var(--tile);stroke-width:2.5;opacity:.9}
+.clock .lbl{fill:var(--muted);font-family:var(--cond);font-size:11px;font-weight:600;text-anchor:middle;dominant-baseline:middle}
+.clock .hand-r{stroke:var(--clock-red);stroke-width:4;stroke-linecap:round}
+.clock .hand-k{stroke:var(--tile);stroke-width:3;stroke-linecap:round;opacity:.75}
+.clock .pin{fill:var(--clock-red)}
+.clockcap{text-align:center;color:var(--muted);font-family:var(--cond);font-size:12px;letter-spacing:.1em;margin-top:-2px}
+
+/* ---------- filters ---------- */
+.qlabel{font-family:var(--cond);font-size:15px;color:var(--muted);letter-spacing:.04em;margin:20px 0 8px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{
+  flex:1 1 0;min-width:64px;padding:11px 6px;text-align:center;
+  background:var(--water-2);border:1.5px solid var(--lane);border-radius:3px;
+  font-family:var(--cond);font-size:16px;font-weight:600;color:var(--muted);
+  transition:background .12s,color .12s,border-color .12s;
+}
+.chip[aria-pressed="true"]{background:var(--chlorine);border-color:var(--chlorine);color:var(--water)}
+.chip .tiny{display:block;font-family:var(--sans);font-size:10.5px;font-weight:400;opacity:.75;letter-spacing:0;line-height:1.2;margin-top:1px}
+
+/* ---------- workout rows (lane cards) ---------- */
+.rows{margin-top:22px}
+.row{
+  display:block;width:100%;text-align:left;
+  border-left:4px solid var(--lane);
+  background:linear-gradient(90deg,rgba(255,255,255,.045),rgba(255,255,255,0));
+  padding:13px 12px 13px 14px;margin-bottom:2px;
+  transition:border-color .12s,background .12s;
+}
+.row:hover,.row:focus-visible{border-left-color:var(--chlorine);background:linear-gradient(90deg,rgba(53,214,193,.11),rgba(255,255,255,0))}
+.row .rname{font-family:var(--cond);font-size:20px;font-weight:600;line-height:1.15}
+.row .rmeta{font-family:var(--cond);font-size:13.5px;color:var(--muted);letter-spacing:.05em;margin-top:3px}
+.row .rmeta b{color:var(--chlorine);font-weight:600}
+.row .rwhy{font-size:13px;color:var(--muted);line-height:1.4;margin-top:5px}
+.cat{font-family:var(--cond);font-size:12px;letter-spacing:.12em;color:var(--muted);border-bottom:1px solid var(--lane);padding-bottom:5px;margin:26px 0 8px}
+.empty{border:1.5px dashed var(--lane);padding:22px 16px;text-align:center;color:var(--muted);font-size:14px;margin-top:20px}
+
+/* ---------- detail ---------- */
+.back{font-family:var(--cond);font-size:15px;color:var(--chlorine);letter-spacing:.04em;padding:20px 0 6px}
+.dhead h2{font-size:30px;line-height:1.08;margin-top:4px}
+.dmeta{font-family:var(--cond);font-size:14px;color:var(--muted);letter-spacing:.06em;margin-top:6px}
+.dwhy{font-size:14.5px;color:var(--muted);line-height:1.5;margin:14px 0 4px;border-left:2px solid var(--lane);padding-left:12px}
+.blk{margin-top:24px}
+.blk h3{font-size:14px;letter-spacing:.14em;color:var(--chlorine);margin-bottom:8px}
+.set{display:flex;align-items:baseline;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.set .sq{font-family:var(--cond);font-size:23px;font-weight:600;min-width:88px;font-variant-numeric:tabular-nums;line-height:1.1}
+.set .sd{flex:1;min-width:0}
+.set .sstroke{font-family:var(--cond);font-size:15.5px;letter-spacing:.03em}
+.set .snote{font-size:12.5px;color:var(--muted);line-height:1.35;margin-top:2px}
+.set .st{text-align:right;font-family:var(--cond);font-variant-numeric:tabular-nums;white-space:nowrap}
+.set .st .big{font-size:20px;font-weight:600;display:block;line-height:1.1}
+.set .st .sm{font-size:12px;color:var(--muted);letter-spacing:.06em}
+.flag{display:inline-block;font-family:var(--cond);font-size:11.5px;letter-spacing:.06em;color:var(--warn);border:1px solid rgba(242,180,65,.45);padding:1px 6px;margin-top:5px}
+.totals{display:flex;gap:26px;margin-top:22px;padding-top:14px;border-top:1px solid var(--lane)}
+.totals div span{display:block;font-family:var(--cond);font-size:12px;letter-spacing:.1em;color:var(--muted)}
+.totals div b{font-family:var(--cond);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- buttons ---------- */
+.btn{display:block;width:100%;padding:15px;background:var(--chlorine);color:var(--water);font-family:var(--cond);font-size:19px;font-weight:700;letter-spacing:.05em;border-radius:3px;margin-top:22px}
+.btn.ghost{background:none;border:1.5px solid var(--lane);color:var(--tile);font-weight:600}
+.btn.red{background:var(--clock-red);color:#fff}
+
+/* ---------- log ---------- */
+.logitem{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.logitem .ln{font-family:var(--cond);font-size:17px}
+.logitem .ld{font-size:12.5px;color:var(--muted);margin-top:2px}
+.logitem .lr{font-family:var(--cond);font-size:15px;color:var(--chlorine);font-variant-numeric:tabular-nums;white-space:nowrap}
+input[type=text],input[type=number],textarea,select{
+  width:100%;background:var(--water-2);border:1.5px solid var(--lane);color:var(--tile);
+  padding:11px;border-radius:3px;font-family:var(--sans);font-size:16px;margin-top:6px;
+}
+textarea{min-height:70px;resize:vertical}
+label.fl{display:block;margin-top:16px;font-family:var(--cond);font-size:14px;color:var(--muted);letter-spacing:.05em}
+.hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.zonetable{width:100%;border-collapse:collapse;margin-top:12px;font-variant-numeric:tabular-nums}
+.zonetable td{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);font-family:var(--cond);font-size:16px}
+.zonetable td:first-child{color:var(--muted);font-size:14px;letter-spacing:.05em}
+.zonetable td:last-child{text-align:right;font-weight:600}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.toggle .tt{font-family:var(--cond);font-size:16.5px}
+.toggle .td{font-size:12.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+.sw{width:50px;height:29px;border-radius:15px;background:var(--lane);position:relative;flex:0 0 auto;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:var(--tile);transition:transform .15s}
+.sw[aria-pressed="true"]{background:var(--chlorine)}
+.sw[aria-pressed="true"]::after{transform:translateX(21px)}
+
+/* ---------- deck mode ---------- */
+#deck{position:fixed;inset:0;background:var(--water);z-index:60;display:none;flex-direction:column;padding:env(safe-area-inset-top) 16px 16px}
+#deck.on{display:flex}
+#deck .dk-top{display:flex;justify-content:space-between;align-items:center;padding:10px 0}
+#deck .dk-top .nm{font-family:var(--cond);font-size:17px;color:var(--muted);letter-spacing:.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#deck .dk-x{font-family:var(--cond);font-size:15px;color:var(--chlorine);padding:4px 8px}
+#deck .dk-clock{display:flex;justify-content:center;padding:2px 0 6px}
+#deck .dk-clock svg{width:min(40vw,158px);height:min(40vw,158px)}
+#deck .dk-sets{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px}
+#deck .dk-blk{font-family:var(--cond);font-size:13px;letter-spacing:.14em;color:var(--chlorine);margin:16px 0 4px}
+#deck .dk-set{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.09)}
+#deck .dk-set.done{opacity:.32}
+#deck .dk-set .a{font-family:var(--cond);font-size:25px;font-weight:600;font-variant-numeric:tabular-nums}
+#deck .dk-set .b{font-family:var(--cond);font-size:14px;color:var(--muted);letter-spacing:.04em}
+#deck .dk-set .c{font-family:var(--cond);font-size:23px;font-weight:600;color:var(--chlorine);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ---------- nav ---------- */
+nav{position:fixed;left:0;right:0;bottom:0;background:rgba(6,48,60,.96);backdrop-filter:blur(12px);border-top:1px solid var(--lane);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:40}
+nav button{flex:1;padding:12px 4px 13px;font-family:var(--cond);font-size:13px;letter-spacing:.08em;color:var(--muted);border-top:2px solid transparent;margin-top:-1px}
+nav button[aria-current="page"]{color:var(--chlorine);border-top-color:var(--chlorine)}
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="mast">
+    <h1>LANE 4</h1>
+    <div class="sub" id="mastSub">—</div>
+  </div>
+
+  <!-- ============ PICK ============ -->
+  <section id="v-pick">
+    <div class="clockwrap">
+      <svg class="clock" id="clockMain" viewBox="0 0 200 200" aria-hidden="true"></svg>
+    </div>
+    <div class="clockcap" id="clockCap">PACE CLOCK</div>
+
+    <div class="qlabel">How long do you have?</div>
+    <div class="chips" id="timeChips"></div>
+
+    <div class="qlabel">How do you feel?</div>
+    <div class="chips" id="feelChips"></div>
+
+    <div class="rows" id="pickRows"></div>
+  </section>
+
+  <!-- ============ LIBRARY ============ -->
+  <section id="v-lib" class="hide"></section>
+
+  <!-- ============ DETAIL ============ -->
+  <section id="v-detail" class="hide"></section>
+
+  <!-- ============ LOG ============ -->
+  <section id="v-log" class="hide"></section>
+
+  <!-- ============ SETUP ============ -->
+  <section id="v-set" class="hide"></section>
+</div>
+
+<!-- ============ DECK MODE ============ -->
+<div id="deck">
+  <div class="dk-top">
+    <div class="nm" id="dkName"></div>
+    <button class="dk-x" id="dkClose">Close</button>
+  </div>
+  <div class="dk-clock"><svg class="clock" id="clockDeck" viewBox="0 0 200 200" aria-hidden="true"></svg></div>
+  <div class="dk-sets" id="dkSets"></div>
+  <button class="btn" id="dkFinish">Finish and log</button>
+</div>
+
+<nav>
+  <button data-nav="pick" aria-current="page">PICK</button>
+  <button data-nav="lib">LIBRARY</button>
+  <button data-nav="log">LOG</button>
+  <button data-nav="set">SETUP</button>
+</nav>
+
+<script>
+"use strict";
+/* =========================================================
+   STATE
+   ========================================================= */
+const LS = "lane4.v1";
+const DEFAULTS = {
+  tt500: 510,          // seconds for 500 time trial
+  unit: "yd",
+  gateBiceps: true,    // biceps tendon: paddles / fly / heavy pull flagged
+  gateAnkle: true,     // lateral ankle: breaststroke kick / hard kick sets flagged
+  ratio: 2,            // engine ratio-ladder step (free lengths per breast length)
+  log: []
+};
+let S = load();
+function load(){
+  try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(LS)||"{}")); }
+  catch(e){ return Object.assign({}, DEFAULTS); }
+}
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+
+/* =========================================================
+   PACE MODEL
+   Everything derives from the 500 time trial.
+   R = 500 pace per 100. Offsets in sec/100.
+   ========================================================= */
+const ZONES = {
+  v:  {off:-4, name:"VO2",       tag:"V"},
+  r:  {off: 0, name:"Race",      tag:"R"},
+  t:  {off:+3, name:"Threshold", tag:"T"},
+  e:  {off:+10,name:"Endurance", tag:"E"},
+  ez: {off:+18,name:"Easy",      tag:"EZ"}
+};
+function per100(z){ return (S.tt500/5) + ZONES[z].off; }
+function target(z,d){ return per100(z) * d / 100; }
+function round5(s){ return Math.ceil(s/5)*5; }
+function mmss(sec){
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), s = sec%60;
+  return m + ":" + String(s).padStart(2,"0");
+}
+function colon(sec){ // send-off style :35 or 1:15
+  sec = Math.round(sec);
+  return sec < 60 ? ":"+String(sec).padStart(2,"0") : mmss(sec);
+}
+function setSeconds(st){
+  const t = target(st.z, st.d);
+  return st.so ? round5(t + st.rest) : (t + st.rest);
+}
+function workoutSeconds(w){
+  let tot = 0;
+  w.blocks.forEach(b=>b.sets.forEach(st=>{ tot += st.r * setSeconds(st); }));
+  return tot;
+}
+function workoutYards(w){
+  let tot = 0;
+  w.blocks.forEach(b=>b.sets.forEach(st=>{ tot += st.r * st.d; }));
+  return tot;
+}
+function workoutMins(w){ return Math.round(workoutSeconds(w)/60); }
+
+/* =========================================================
+   WORKOUT LIBRARY
+   set = {r reps, d distance, s stroke, z zone, rest sec,
+          so:1 -> present as send-off, note, gate}
+   ========================================================= */
+const STROKE = {
+  free:"freestyle", breast:"breaststroke", back:"backstroke",
+  choice:"choice", css:"combat sidestroke", drill:"drill",
+  kick:"kick", pull:"pull", mix:"mixed strokes"
+};
+const CATS = [
+  ["engine","Engine"],
+  ["thresh","Threshold"],
+  ["vo2","Intervals"],
+  ["race","Race & PRT"],
+  ["rec","Recovery"],
+  ["tech","Technique"]
+];
+
+const WU = (d)=>({r:1,d:d,s:"free",z:"ez",rest:30,note:"Build the last 50. Loosen shoulders."});
+const CD = (d)=>({r:1,d:d,s:"choice",z:"ez",rest:0,note:"Easy. Long and quiet."});
+
+const LIB = [
+/* ---------------- ENGINE ---------------- */
+{id:"eng-400", cat:"engine", feel:["fresh","ok"], name:"Steady State 400s",
+ why:"Aerobic base at a pace you could hold for an hour. Builds stroke volume and capillary density without the recovery cost of hard intervals.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:4,d:400,s:"free",z:"e",rest:30,note:"Even splits. If #4 is faster than #1 you started too easy."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"eng-ladder", cat:"engine", feel:["fresh","ok"], name:"The Ladder",
+ why:"Same aerobic stimulus as a straight swim, but the changing distance keeps your head in it and lets you check pace decay on the way down.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"UP",      sets:[{r:1,d:100,s:"free",z:"e",rest:20},{r:1,d:200,s:"free",z:"e",rest:20},{r:1,d:300,s:"free",z:"e",rest:20},{r:1,d:400,s:"free",z:"e",rest:20}]},
+  {t:"DOWN",    sets:[{r:1,d:300,s:"free",z:"e",rest:20},{r:1,d:200,s:"free",z:"e",rest:20},{r:1,d:100,s:"free",z:"e",rest:20,note:"Hold pace on the descent — that's the whole test."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"eng-1500", cat:"engine", feel:["ok"], name:"Unbroken 1500",
+ why:"No walls to hide behind. Continuous work is where aerobic efficiency and stroke economy actually get built, and it's the closest pool analogue to a long run.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"MAIN",    sets:[{r:1,d:1500,s:"free",z:"e",rest:0,note:"One swim, no stopping. Breathe bilaterally the whole way if you can."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"eng-50s", cat:"engine", feel:["ok","beat"], name:"Cruise 50s",
+ why:"High volume at endurance pace with short rest. The tight send-off keeps heart rate elevated between reps so it stays aerobic rather than becoming a sprint set.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:24,d:50,s:"free",z:"e",rest:12,so:1,note:"Leave on the clock. If you miss two in a row, stop the set."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"eng-ratio", cat:"engine", feel:["ok","beat"], name:"Ratio Ladder",
+ why:"Freestyle-to-breaststroke ratio work. Breaststroke lengths act as active recovery so you can accumulate freestyle volume before your stroke breaks down. Advance the ratio only when you hold the full length count clean.",
+ ratio:true,
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"MAIN",    sets:[{r:8,d:200,s:"mix",z:"e",rest:25,note:"Current ratio set in Setup. Free lengths at endurance pace, breast lengths easy and long."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"eng-pull", cat:"engine", feel:["fresh","ok"], name:"Long Pull",
+ why:"Buoy removes the legs so you can hold a higher upper-body output and feel the catch. Volume without loading your ankle at all.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:5,d:200,s:"pull",z:"e",rest:20,gate:"biceps",note:"Buoy only. Paddles add real load to the biceps tendon at the front of the catch."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+
+{id:"eng-overload", cat:"engine", feel:["ok","fresh"], name:"Aerobic Overload",
+ why:"A long, mostly steady session that finishes with a hard 500. Big aerobic dose plus a fatigued time trial rehearsal — you find out what your race pace feels like on tired arms.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(400)]},
+  {t:"BASE",    sets:[{r:1,d:1000,s:"free",z:"e",rest:45,note:"Unbroken. Settle in."}]},
+  {t:"BUILD",   sets:[{r:5,d:200,s:"free",z:"e",rest:20,note:"Same pace as the 1000. No heroics yet."}]},
+  {t:"FINISH",  sets:[{r:1,d:500,s:"free",z:"t",rest:0,note:"Now hurt. Threshold on tired arms."}]},
+  {t:"COOL DOWN",sets:[CD(300)]}
+]},
+
+/* ---------------- THRESHOLD ---------------- */
+{id:"thr-20", cat:"thresh", feel:["ok","fresh"], name:"Twenty Minute Threshold",
+ why:"The whole session in twenty minutes. Short warmup, six hard hundreds, out. Worth more than skipping the pool because you only had a half hour.",
+ blocks:[
+  {t:"WARM UP", sets:[{r:1,d:200,s:"free",z:"ez",rest:30,note:"Short. Build the last 50."}]},
+  {t:"MAIN",    sets:[{r:6,d:100,s:"free",z:"t",rest:10,note:"Ten seconds rest. Straight through."}]},
+  {t:"COOL DOWN",sets:[CD(100)]}
+]},
+{id:"thr-long", cat:"thresh", feel:["fresh","ok"], name:"The Long Haul",
+ why:"The biggest session here. Ten 200s at threshold, then four fast hundreds on top of the fatigue. This is the one that moves your 500 the most, and the one you need a real window for.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(400)]},
+  {t:"MAIN",    sets:[{r:10,d:200,s:"free",z:"t",rest:20,note:"Ten of them. #7 and #8 are where the session actually happens."}]},
+  {t:"TOP END", sets:[{r:4,d:100,s:"free",z:"v",rest:45,note:"Faster than race pace, on legs that are already gone."}]},
+  {t:"COOL DOWN",sets:[CD(300)]}
+]},
+{id:"thr-200", cat:"thresh", feel:["fresh","ok"], name:"Threshold 200s",
+ why:"Sitting right at the pace you can hold for roughly 30 minutes. This is the single highest-return zone for dropping your 500 — it raises the ceiling on how fast you can go before you start accumulating hydrogen ions faster than you clear them.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:5,d:200,s:"free",z:"t",rest:15,note:"Short rest is the point. It should feel controlled for three, hard for two."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"thr-brk", cat:"thresh", feel:["fresh","ok"], name:"Broken 500s",
+ why:"Three rounds of 500 chopped into 100s. You get more time at threshold pace than a continuous swim allows, because the ten seconds between reps buys you just enough clearance to keep going.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"ROUND 1", sets:[{r:5,d:100,s:"free",z:"t",rest:10}]},
+  {t:"ROUND 2", sets:[{r:5,d:100,s:"free",z:"t",rest:10,note:"1:00 easy between rounds."}]},
+  {t:"ROUND 3", sets:[{r:5,d:100,s:"free",z:"t",rest:10}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"thr-300", cat:"thresh", feel:["fresh"], name:"Descending 300s",
+ why:"Start at endurance, finish at race pace. Teaches you what each gear feels like without a clock, which is what you need on TT day when adrenaline lies to you.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[
+    {r:1,d:300,s:"free",z:"e",rest:30,note:"#1 — endurance."},
+    {r:1,d:300,s:"free",z:"t",rest:30,note:"#2 — threshold."},
+    {r:1,d:300,s:"free",z:"r",rest:30,note:"#3 — 500 race pace."},
+    {r:1,d:300,s:"free",z:"v",rest:30,note:"#4 — faster than race pace. Earn it."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"thr-mile", cat:"thresh", feel:["fresh"], name:"Broken Mile",
+ why:"Eight 200s is a big aerobic load at a pace you can actually hold. Long session — the one to pick when you have the pool and the morning.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(400)]},
+  {t:"MAIN",    sets:[{r:8,d:200,s:"free",z:"t",rest:20,note:"Hold the same split for all eight. Fade is the failure mode."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+
+/* ---------------- INTERVALS ---------------- */
+{id:"vo-quick", cat:"vo2", feel:["fresh","ok"], name:"Quick Burn",
+ why:"Twenty minutes, all of it useful. Ten fifties above race pace on a tight send-off. The shortest session in here that still counts as training.",
+ blocks:[
+  {t:"WARM UP", sets:[{r:1,d:200,s:"free",z:"ez",rest:30,note:"Short and honest. Two easy hundreds."}]},
+  {t:"MAIN",    sets:[{r:10,d:50,s:"free",z:"v",rest:20,so:1,note:"Leave on the clock every time. No stopping to think."}]},
+  {t:"COOL DOWN",sets:[CD(100)]}
+]},
+{id:"vo-50", cat:"vo2", feel:["fresh"], name:"Send-Off 50s",
+ why:"Short reps above race pace with incomplete recovery. Drives VO2 max and buffering capacity — the same quality that decides whether your legs turn to concrete in the fourth quarter, trained without touching your ankle.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:12,d:50,s:"free",z:"v",rest:20,so:1,note:"Leave on the send-off. Rest shrinks as you slow — that's the overload."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"vo-100", cat:"vo2", feel:["fresh"], name:"Best Average 100s",
+ why:"The classic. Eight hard 100s where the score is your slowest one, not your fastest. Directly transfers to the 500 because it's the same system under repeated stress.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:8,d:100,s:"free",z:"v",rest:45,note:"Write down #1. Nothing should be more than 3 seconds off it."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"vo-25", cat:"vo2", feel:["fresh","ok"], name:"25 Sharpeners",
+ why:"Pure speed and turnover with enough rest to stay fast. Short enough that nothing accumulates — this is a nervous-system session, not a conditioning one.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:20,d:25,s:"free",z:"v",rest:18,so:1,note:"Fast, long, no breath in or out of the wall."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"vo-75", cat:"vo2", feel:["fresh"], name:"75 Burners",
+ why:"Long enough to hurt, short enough to hold form. Sits in the gap between speed work and threshold where most of the useful discomfort lives.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:8,d:75,s:"free",z:"v",rest:40,note:"The third 25 is the one that counts."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"vo-pyr", cat:"vo2", feel:["fresh"], name:"Pyramid Intervals",
+ why:"Three rounds up and down. The varying distance forces pace judgement instead of letting you settle into one rhythm.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"ROUND ×3", sets:[
+    {r:3,d:50,s:"free",z:"v",rest:20},
+    {r:3,d:100,s:"free",z:"v",rest:30},
+    {r:3,d:150,s:"free",z:"v",rest:40,note:"Then back down: 100, 50. Rest 1:00 between rounds."},
+    {r:3,d:100,s:"free",z:"v",rest:30},
+    {r:3,d:50,s:"free",z:"v",rest:20}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"vo-lac", cat:"vo2", feel:["fresh"], name:"Lactate Tolerance",
+ why:"Four near-maximal 100s with long rest. Deliberately drives hydrogen ion accumulation high, then gives you enough recovery to do it again — trains clearance, not just production. Use sparingly, once a week at most.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(400)]},
+  {t:"MAIN",    sets:[{r:4,d:100,s:"free",z:"v",rest:150,note:"Near max. Full 2:30 rest. If you can do a fifth, you didn't go hard enough."}]},
+  {t:"COOL DOWN",sets:[CD(300)]}
+]},
+
+/* ---------------- RACE & PRT ---------------- */
+{id:"tt-500", cat:"race", feel:["fresh"], name:"500 Time Trial",
+ why:"The benchmark. Everything else in this app scales off this number, so run it properly: rested, warmed up, and honest.",
+ tt:true,
+ blocks:[
+  {t:"WARM UP", sets:[
+    {r:1,d:400,s:"free",z:"ez",rest:60},
+    {r:4,d:50,s:"free",z:"r",rest:30,note:"Build to race pace. Feel the turnover."},
+    {r:1,d:100,s:"choice",z:"ez",rest:180,note:"Then 3:00 full rest before you go."}]},
+  {t:"TIME TRIAL", sets:[{r:1,d:500,s:"free",z:"r",rest:0,note:"Push off, don't dive. Log the time in Setup when you're out."}]},
+  {t:"COOL DOWN",sets:[CD(300)]}
+]},
+{id:"race-brk", cat:"race", feel:["fresh","ok"], name:"Broken 500 at Race Pace",
+ why:"The full race distance at race pace, with ten seconds at each hundred. Rehearses the exact rhythm of the TT while staying just under the effort that would wreck you.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:5,d:100,s:"free",z:"r",rest:10,note:"Every 100 on the same split. This is what the TT should feel like."}]},
+  {t:"BONUS",   sets:[{r:1,d:200,s:"free",z:"e",rest:0,note:"Easy 200 to flush, then repeat the broken 500 if you have time."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"race-100", cat:"race", feel:["fresh","ok"], name:"Race Pace 100s",
+ why:"Six hundreds at exactly 500 pace with full rest. Grooves the target split so it feels automatic instead of something you have to calculate mid-swim.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN",    sets:[{r:6,d:100,s:"free",z:"r",rest:60,note:"Not faster. Hitting the split exactly is the skill."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"prt-css", cat:"race", feel:["ok","beat"], name:"Combat Sidestroke Build",
+ why:"Low-cost, low-heart-rate stroke that shows up in Navy training. Worth having in the bank even though the PRT swim itself is untimed stroke-choice — and it doubles as genuine recovery work.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"TECHNIQUE", sets:[{r:8,d:50,s:"css",z:"ez",rest:20,note:"Glide long between pulls. Count strokes — fewer is the goal."}]},
+  {t:"CONTINUOUS", sets:[{r:1,d:500,s:"css",z:"ez",rest:0,note:"Unbroken. Should feel almost restful by the end."}]},
+  {t:"COOL DOWN",sets:[CD(100)]}
+]},
+{id:"prt-tread", cat:"race", feel:["ok","beat"], name:"Tread and Recover",
+ why:"Water competency work. Treading is a skill you either have or discover you don't at a bad moment.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"TREAD", sets:[{r:1,d:100,s:"choice",z:"ez",rest:0,note:"5 × 2:00 treading, 1:00 rest. Last minute hands out of the water."}]},
+  {t:"SWIM",  sets:[{r:6,d:100,s:"choice",z:"e",rest:20,note:"Alternate strokes each 100."}]},
+  {t:"COOL DOWN",sets:[CD(100)]}
+]},
+
+/* ---------------- RECOVERY ---------------- */
+{id:"rec-flush", cat:"rec", feel:["beat","ok"], name:"Flush Swim",
+ why:"Twenty minutes of nothing hard. Blood flow through the shoulders and hips with zero impact — the best thing you can do the day after a heavy lift or a running-heavy practice.",
+ blocks:[
+  {t:"SWIM", sets:[{r:1,d:1000,s:"mix",z:"ez",rest:0,note:"No clock. Change strokes whenever you feel like it. If you're counting, you're going too hard."}]}
+]},
+{id:"rec-long", cat:"rec", feel:["beat","ok"], name:"Long Flush",
+ why:"Two thousand easy. Long enough to be real aerobic work but soft enough that it costs you nothing — the session for the day after a hard lift or a running-heavy practice when you still want volume.",
+ blocks:[
+  {t:"SWIM", sets:[
+    {r:1,d:1200,s:"free",z:"ez",rest:60,note:"Bilateral breathing. Nothing above easy."},
+    {r:1,d:800,s:"mix",z:"ez",rest:0,note:"Change stroke every 100. Finish feeling better than you started."}]}
+]},
+{id:"rec-breast", cat:"rec", feel:["beat"], name:"Breaststroke Glide",
+ why:"Unloaded range of motion through the shoulder with a long glide phase. Not a hypertrophy or conditioning stimulus — the value is circulation and pain-free ROM through the tendon.",
+ blocks:[
+  {t:"SWIM", sets:[
+    {r:10,d:50,s:"breast",z:"ez",rest:20,gate:"ankle",note:"Breaststroke kick asks for dorsiflexion and eversion. If the ankle talks back, switch to pull-only breaststroke with a buoy."},
+    {r:1,d:200,s:"back",z:"ez",rest:0,note:"Easy backstroke to open the chest."}]}
+]},
+{id:"rec-kick", cat:"rec", feel:["beat","ok"], name:"Easy Kick and Drill",
+ why:"Legs and posture work with no shoulder load at all. Good option on a day when the biceps or shoulder is grumpy but you still want to move.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"KICK", sets:[{r:8,d:50,s:"kick",z:"ez",rest:25,gate:"ankle",note:"Board or streamline. Small fast kick from the hip. Fins make this easier on a sore ankle, not harder."}]},
+  {t:"DRILL",sets:[{r:6,d:50,s:"drill",z:"ez",rest:20,note:"Alternate 25 catch-up / 25 swim."}]},
+  {t:"COOL DOWN",sets:[CD(100)]}
+]},
+
+/* ---------------- TECHNIQUE ---------------- */
+{id:"tech-catch", cat:"tech", feel:["ok","beat"], name:"Catch Clinic",
+ why:"Most speed you're leaving in the water is at the front of the stroke. High elbow catch is the difference between pulling water backward and pushing yourself down.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"DRILL", sets:[
+    {r:4,d:50,s:"drill",z:"ez",rest:20,note:"Fingertip drag — drag fingers along the surface on recovery, elbow leads."},
+    {r:4,d:50,s:"drill",z:"ez",rest:20,note:"Catch-up — one hand waits at full extension until the other arrives."},
+    {r:4,d:50,s:"drill",z:"ez",rest:20,note:"Sculling at the front quarter, head down, feel the pressure on the forearm."}]},
+  {t:"APPLY", sets:[{r:6,d:100,s:"free",z:"e",rest:20,note:"Swim it with the catch you just found."}]},
+  {t:"COOL DOWN",sets:[CD(100)]}
+]},
+{id:"tech-golf", cat:"tech", feel:["ok"], name:"Stroke Golf",
+ why:"Add your stroke count and your time for a 50. Lower score wins. Forces you to find speed through distance-per-stroke rather than just spinning your arms faster.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(300)]},
+  {t:"MAIN", sets:[{r:10,d:50,s:"free",z:"t",rest:30,note:"Count strokes each 50. Score = strokes + seconds. Try to drop the score across the set."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]},
+{id:"tech-breathe", cat:"tech", feel:["ok"], name:"Bilateral Breathing",
+ why:"Breathing to one side builds an asymmetric stroke and an asymmetric neck. Also directly useful: you can't always pick your side in open water.",
+ blocks:[
+  {t:"WARM UP", sets:[WU(200)]},
+  {t:"PATTERN", sets:[
+    {r:4,d:100,s:"free",z:"e",rest:20,note:"Breathe every 3."},
+    {r:4,d:100,s:"free",z:"e",rest:20,note:"Breathe every 5."},
+    {r:4,d:75,s:"free",z:"t",rest:25,note:"Every 3, at threshold. This is where it gets uncomfortable."}]},
+  {t:"COOL DOWN",sets:[CD(200)]}
+]}
+];
+
+/* =========================================================
+   PACE CLOCK
+   Two hands 30s apart, like a real deck clock.
+   ========================================================= */
+function buildClock(svg){
+  let h = '<circle class="face" cx="100" cy="100" r="93"/>';
+  for(let i=0;i<60;i++){
+    const a = (i/60)*Math.PI*2 - Math.PI/2;
+    const big = i%5===0;
+    const r1 = big?76:82, r2 = 88;
+    h += `<line class="tick${big?" big":""}" x1="${100+Math.cos(a)*r1}" y1="${100+Math.sin(a)*r1}" x2="${100+Math.cos(a)*r2}" y2="${100+Math.sin(a)*r2}"/>`;
+    if(big){
+      const lr = 64, lab = i===0 ? "60" : String(i);
+      h += `<text class="lbl" x="${100+Math.cos(a)*lr}" y="${100+Math.sin(a)*lr}">${lab}</text>`;
+    }
+  }
+  h += '<line class="hand-k" id="hk" x1="100" y1="100" x2="100" y2="24"/>';
+  h += '<line class="hand-r" id="hr" x1="100" y1="100" x2="100" y2="20"/>';
+  h += '<circle class="pin" cx="100" cy="100" r="5"/>';
+  svg.innerHTML = h;
+}
+function tickClocks(){
+  const now = (Date.now()/1000) % 60;
+  document.querySelectorAll(".clock, #clockDeck").forEach(svg=>{
+    const hr = svg.querySelector(".hand-r"), hk = svg.querySelector(".hand-k");
+    if(!hr) return;
+    hr.setAttribute("transform",`rotate(${now*6} 100 100)`);
+    hk.setAttribute("transform",`rotate(${((now+30)%60)*6} 100 100)`);
+  });
+  const cap = document.getElementById("clockCap");
+  if(cap) cap.textContent = "RED TOP AT :" + String(Math.floor(now)).padStart(2,"0");
+  requestAnimationFrame(tickClocks);
+}
+
+/* =========================================================
+   RENDER HELPERS
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const U = () => S.unit;
+
+let filterTime = 45, filterFeel = "ok";
+
+function gateActive(g){
+  if(g==="biceps") return S.gateBiceps;
+  if(g==="ankle")  return S.gateAnkle;
+  return false;
+}
+function gateText(g){
+  return g==="biceps" ? "Biceps tendon — modify" : "Ankle — modify";
+}
+
+function rowHTML(w){
+  const m = workoutMins(w), y = workoutYards(w);
+  return `<button class="row" data-open="${w.id}">
+    <div class="rname">${esc(w.name)}</div>
+    <div class="rmeta"><b>${m} MIN</b> &nbsp;·&nbsp; ${y.toLocaleString()} ${U().toUpperCase()}</div>
+    <div class="rwhy">${esc(w.why.split(".")[0])}.</div>
+  </button>`;
+}
+
+function renderPick(){
+  const times = [[20,"quick"],[30,"normal"],[45,"full"],[75,"long"]];
+  $("timeChips").innerHTML = times.map(([v,l])=>
+    `<button class="chip" data-time="${v}" aria-pressed="${filterTime===v}">${v}<span class="tiny">${l}</span></button>`).join("");
+  const feels = [["fresh","ready to hurt"],["ok","normal day"],["beat","legs are toast"]];
+  $("feelChips").innerHTML = feels.map(([v,l])=>
+    `<button class="chip" data-feel="${v}" aria-pressed="${filterFeel===v}">${v==="ok"?"OK":v.toUpperCase()}<span class="tiny">${l}</span></button>`).join("");
+
+  const match = LIB.filter(w => w.feel.includes(filterFeel) && workoutMins(w) <= filterTime)
+                   .sort((a,b)=>workoutMins(b)-workoutMins(a));
+  $("pickRows").innerHTML = match.length
+    ? `<div class="cat">${match.length} WORKOUT${match.length>1?"S":""} THAT FIT</div>` + match.map(rowHTML).join("")
+    : `<div class="empty">Nothing fits ${filterTime} minutes at that effort. Try a longer window, or drop to an easier day.</div>`;
+}
+
+function renderLib(){
+  let h = `<div class="qlabel" style="margin-top:24px">Every workout, by type. Times and send-offs are computed from your current 500.</div>`;
+  CATS.forEach(([key,label])=>{
+    const ws = LIB.filter(w=>w.cat===key);
+    if(!ws.length) return;
+    h += `<div class="cat">${label.toUpperCase()}</div>` + ws.map(rowHTML).join("");
+  });
+  $("v-lib").innerHTML = h;
+}
+
+function setLineHTML(st){
+  const t = target(st.z, st.d);
+  const qty = st.r>1 ? `${st.r} × ${st.d}` : `${st.d}`;
+  const showTime = st.d >= 25;
+  let right = "";
+  if(showTime){
+    if(st.so){
+      right = `<span class="big">${colon(round5(t+st.rest))}</span><span class="sm">SEND-OFF · TARGET ${mmss(t)}</span>`;
+    } else if(st.rest>0){
+      right = `<span class="big">${mmss(t)}</span><span class="sm">REST ${colon(st.rest)}</span>`;
+    } else {
+      right = `<span class="big">${mmss(t)}</span><span class="sm">${ZONES[st.z].tag} PACE</span>`;
+    }
+  }
+  const gated = st.gate && gateActive(st.gate);
+  return `<div class="set">
+    <div class="sq">${qty}</div>
+    <div class="sd">
+      <div class="sstroke">${esc(STROKE[st.s]||st.s)} · ${ZONES[st.z].name.toLowerCase()}</div>
+      ${st.note?`<div class="snote">${esc(st.note)}</div>`:""}
+      ${gated?`<div class="flag">${gateText(st.gate)}</div>`:""}
+    </div>
+    <div class="st">${right}</div>
+  </div>`;
+}
+
+let openId = null;
+function renderDetail(id){
+  const w = LIB.find(x=>x.id===id); if(!w) return;
+  openId = id;
+  let h = `<button class="back" data-back="1">← Back</button>
+    <div class="dhead"><h2>${esc(w.name)}</h2>
+    <div class="dmeta">${workoutMins(w)} MIN &nbsp;·&nbsp; ${workoutYards(w).toLocaleString()} ${U().toUpperCase()} &nbsp;·&nbsp; ${CATS.find(c=>c[0]===w.cat)[1].toUpperCase()}</div></div>
+    <div class="dwhy">${esc(w.why)}</div>`;
+  if(w.ratio){
+    h += `<div class="dwhy" style="border-left-color:var(--chlorine)">Current ratio: ${S.ratio}:1 — ${S.ratio} free length${S.ratio>1?"s":""} for every 1 breaststroke. Change it in Setup once you hold the full count clean.</div>`;
+  }
+  w.blocks.forEach(b=>{
+    h += `<div class="blk"><h3>${esc(b.t)}</h3>` + b.sets.map(setLineHTML).join("") + `</div>`;
+  });
+  h += `<div class="totals">
+      <div><span>DISTANCE</span><b>${workoutYards(w).toLocaleString()}</b></div>
+      <div><span>TIME</span><b>${workoutMins(w)}</b></div>
+      <div><span>500 BASIS</span><b>${mmss(S.tt500)}</b></div>
+    </div>
+    <button class="btn" data-deck="${w.id}">Take it to the deck</button>
+    <button class="btn ghost" data-quicklog="${w.id}">Log it without deck mode</button>`;
+  $("v-detail").innerHTML = h;
+}
+
+/* =========================================================
+   DECK MODE
+   ========================================================= */
+let deckDone = new Set();
+function openDeck(id){
+  const w = LIB.find(x=>x.id===id); if(!w) return;
+  deckDone = new Set();
+  $("dkName").textContent = w.name;
+  $("deck").classList.add("on");
+  $("deck").dataset.wid = id;
+  renderDeckSets(w);
+}
+function renderDeckSets(w){
+  let h = "", i = 0;
+  w.blocks.forEach(b=>{
+    h += `<div class="dk-blk">${esc(b.t)}</div>`;
+    b.sets.forEach(st=>{
+      const t = target(st.z,st.d);
+      const right = st.so ? colon(round5(t+st.rest))
+                   : st.rest>0 ? mmss(t)+" / "+colon(st.rest)
+                   : mmss(t);
+      const flagged = st.gate && gateActive(st.gate);
+      h += `<div class="dk-set${deckDone.has(i)?" done":""}" data-dk="${i}">
+        <div style="min-width:0"><div class="a">${st.r>1?st.r+" × "+st.d:st.d}</div>
+        <div class="b">${esc(STROKE[st.s]||st.s)}${flagged?" · modify":""}</div>
+        ${st.note?`<div class="b" style="color:var(--muted);opacity:.8;font-size:12.5px;white-space:normal;margin-top:3px">${esc(st.note)}</div>`:""}</div>
+        <div class="c">${right}</div></div>`;
+      i++;
+    });
+  });
+  $("dkSets").innerHTML = h;
+}
+$("dkSets").addEventListener("click", e=>{
+  const el = e.target.closest("[data-dk]"); if(!el) return;
+  const i = +el.dataset.dk;
+  deckDone.has(i) ? deckDone.delete(i) : deckDone.add(i);
+  el.classList.toggle("done");
+});
+$("dkClose").addEventListener("click", ()=> $("deck").classList.remove("on"));
+$("dkFinish").addEventListener("click", ()=>{
+  const id = $("deck").dataset.wid;
+  $("deck").classList.remove("on");
+  logWorkout(id);
+});
+
+/* =========================================================
+   LOG
+   ========================================================= */
+function logWorkout(id){
+  const w = LIB.find(x=>x.id===id); if(!w) return;
+  const rpe = prompt(`How hard was "${w.name}"? RPE 1–10`, "7");
+  if(rpe===null) return;
+  const note = prompt("Anything worth remembering? (optional)", "") || "";
+  S.log.unshift({
+    id: w.id, name: w.name, cat: w.cat,
+    yards: workoutYards(w), mins: workoutMins(w),
+    rpe: Math.max(1,Math.min(10, parseInt(rpe,10)||7)),
+    note: note.slice(0,240),
+    ts: Date.now(), basis: S.tt500
+  });
+  S.log = S.log.slice(0,200);
+  save();
+  go("log");
+}
+function fmtDate(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+}
+function renderLog(){
+  const L = S.log;
+  const wk = L.filter(e=>Date.now()-e.ts < 7*864e5);
+  const wkYards = wk.reduce((a,b)=>a+b.yards,0);
+  let h = `<div class="totals" style="margin-top:26px;border-top:none;padding-top:0">
+      <div><span>LAST 7 DAYS</span><b>${wk.length}</b></div>
+      <div><span>${U().toUpperCase()} THIS WEEK</span><b>${wkYards.toLocaleString()}</b></div>
+      <div><span>ALL TIME</span><b>${L.length}</b></div>
+    </div>`;
+
+  if(!L.length){
+    h += `<div class="empty">No swims logged yet. Pick one, take it to the deck, and it'll land here.</div>`;
+  } else {
+    h += `<div class="cat">HISTORY</div>`;
+    h += L.map((e,i)=>`<div class="logitem">
+      <div><div class="ln">${esc(e.name)}</div>
+      <div class="ld">${fmtDate(e.ts)} · ${e.yards.toLocaleString()} ${U()} · ${e.mins} min${e.note?" · "+esc(e.note):""}</div></div>
+      <div class="lr">RPE ${e.rpe}<br><button data-del="${i}" style="font-size:11px;color:var(--muted);font-family:var(--cond);letter-spacing:.06em">delete</button></div>
+    </div>`).join("");
+  }
+  $("v-log").innerHTML = h;
+}
+
+/* =========================================================
+   SETUP
+   ========================================================= */
+function renderSet(){
+  const r = S.tt500/5;
+  let h = `<div class="qlabel" style="margin-top:24px">Your 500 time trial</div>
+    <div class="hint">This one number sets every pace and send-off in the app. Re-run the time trial every three or four weeks and update it here.</div>
+    <label class="fl">500 ${U()} freestyle — minutes and seconds
+      <div style="display:flex;gap:10px">
+        <input type="number" id="ttM" min="3" max="20" value="${Math.floor(S.tt500/60)}" aria-label="minutes">
+        <input type="number" id="ttS" min="0" max="59" value="${S.tt500%60}" aria-label="seconds">
+      </div>
+    </label>
+
+    <div class="cat">YOUR PACES PER 100 ${U().toUpperCase()}</div>
+    <table class="zonetable">
+      ${Object.entries(ZONES).map(([k,z])=>`<tr><td>${z.name}${z.off?` (${z.off>0?"+":""}${z.off}s)`:" (500 pace)"}</td><td>${mmss(per100(k))}</td></tr>`).join("")}
+    </table>
+    <div class="hint">Zones are offsets from your 500 pace of ${mmss(r)} per 100. Send-offs round up to the nearest five seconds so they land on the clock.</div>
+
+    <div class="cat">POOL</div>
+    <label class="fl">Length units
+      <select id="unitSel">
+        <option value="yd"${S.unit==="yd"?" selected":""}>Yards</option>
+        <option value="m"${S.unit==="m"?" selected":""}>Meters</option>
+      </select>
+    </label>
+    <div class="hint">Distances stay the same either way — only the label changes. A 500 m is roughly 9% longer than a 500 yd, so re-run the time trial if you switch pools.</div>
+
+    <label class="fl">Ratio ladder step (Engine)
+      <select id="ratioSel">
+        ${[1,2,3,4].map(n=>`<option value="${n}"${S.ratio===n?" selected":""}>${n}:1 free to breast</option>`).join("")}
+        <option value="99"${S.ratio===99?" selected":""}>Continuous freestyle</option>
+      </select>
+    </label>
+    <div class="hint">Only advance when you hold the full length count clean at the current step.</div>
+
+    <div class="cat">INJURY FLAGS</div>
+    <div class="toggle">
+      <div><div class="tt">Biceps tendon</div><div class="td">Flags paddle and heavy pull sets. Turn off after the re-test clears.</div></div>
+      <button class="sw" id="gB" aria-pressed="${S.gateBiceps}" aria-label="Biceps tendon flag"></button>
+    </div>
+    <div class="toggle">
+      <div><div class="tt">Ankle</div><div class="td">Flags breaststroke kick and board kick sets with a modification.</div></div>
+      <button class="sw" id="gA" aria-pressed="${S.gateAnkle}" aria-label="Ankle flag"></button>
+    </div>
+    <div class="hint">These flag sets with a note rather than hiding them. The call is still yours — 3 out of 10 during, and the morning after is the real test.</div>
+
+    <div class="cat">DATA</div>
+    <button class="btn ghost" id="expBtn">Copy my log as text</button>
+    <button class="btn ghost" id="wipeBtn" style="border-color:var(--clock-red);color:var(--clock-red)">Erase everything</button>`;
+  $("v-set").innerHTML = h;
+
+  const upd = ()=>{
+    const m = Math.max(0,parseInt($("ttM").value,10)||0);
+    const s = Math.max(0,Math.min(59,parseInt($("ttS").value,10)||0));
+    const v = m*60+s;
+    if(v >= 120 && v <= 1800){ S.tt500 = v; save(); renderSet(); syncMast(); }
+  };
+  $("ttM").addEventListener("change",upd);
+  $("ttS").addEventListener("change",upd);
+  $("unitSel").addEventListener("change",e=>{ S.unit=e.target.value; save(); renderSet(); });
+  $("ratioSel").addEventListener("change",e=>{ S.ratio=+e.target.value; save(); });
+  $("gB").addEventListener("click",e=>{ S.gateBiceps=!S.gateBiceps; save(); renderSet(); });
+  $("gA").addEventListener("click",e=>{ S.gateAnkle=!S.gateAnkle; save(); renderSet(); });
+  $("expBtn").addEventListener("click",()=>{
+    const txt = S.log.map(e=>`${new Date(e.ts).toISOString().slice(0,10)}\t${e.name}\t${e.yards}${S.unit}\t${e.mins}min\tRPE ${e.rpe}\t${e.note}`).join("\n");
+    navigator.clipboard?.writeText(txt || "No swims logged.").then(
+      ()=>{ $("expBtn").textContent = "Copied"; setTimeout(()=>$("expBtn").textContent="Copy my log as text",1400); },
+      ()=>{ alert(txt || "No swims logged."); }
+    );
+  });
+  $("wipeBtn").addEventListener("click",()=>{
+    if(confirm("This erases your log and settings. It can't be undone.")){
+      localStorage.removeItem(LS); S = load(); renderAll(); go("pick");
+    }
+  });
+}
+
+/* =========================================================
+   NAV
+   ========================================================= */
+const VIEWS = ["pick","lib","detail","log","set"];
+function go(v){
+  VIEWS.forEach(x=>$("v-"+x).classList.toggle("hide", x!==v));
+  document.querySelectorAll("nav button").forEach(b=>{
+    const on = b.dataset.nav===v || (v==="detail" && b.dataset.nav==="lib");
+    on ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current");
+  });
+  if(v==="lib") renderLib();
+  if(v==="log") renderLog();
+  if(v==="set") renderSet();
+  if(v==="pick") renderPick();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("nav button").forEach(b=>
+  b.addEventListener("click",()=>go(b.dataset.nav)));
+
+document.addEventListener("click", e=>{
+  const t = e.target.closest("[data-time]");
+  if(t){ filterTime = +t.dataset.time; renderPick(); return; }
+  const f = e.target.closest("[data-feel]");
+  if(f){ filterFeel = f.dataset.feel; renderPick(); return; }
+  const o = e.target.closest("[data-open]");
+  if(o){ renderDetail(o.dataset.open); go("detail"); return; }
+  const bk = e.target.closest("[data-back]");
+  if(bk){ go("pick"); return; }
+  const dk = e.target.closest("[data-deck]");
+  if(dk){ openDeck(dk.dataset.deck); return; }
+  const ql = e.target.closest("[data-quicklog]");
+  if(ql){ logWorkout(ql.dataset.quicklog); return; }
+  const dl = e.target.closest("[data-del]");
+  if(dl){ S.log.splice(+dl.dataset.del,1); save(); renderLog(); return; }
+});
+
+function syncMast(){
+  $("mastSub").textContent = "500 BASIS " + mmss(S.tt500);
+}
+function renderAll(){ syncMast(); renderPick(); }
+
+buildClock($("clockMain"));
+buildClock($("clockDeck"));
+renderAll();
+requestAnimationFrame(tickClocks);
+</script>
+</body>
+</html>
